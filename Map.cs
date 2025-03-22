@@ -3,28 +3,20 @@ namespace MyApp;
 internal class Map
 {
     private const string MapFilePath = "Map.txt";
-    private const int Rows = 40;
-    private const int Columns = 180;
+    public const int Rows = 40;
+    public const int Columns = 180;
+    private readonly char[,] _mapInit = new char[Rows, Columns];
     private readonly char[,] _map = new char[Rows, Columns];
+    private List<Movable> _movables = new();
+
+    private bool _gameOver = false;
     
     public Map()
     {
-        ReadMapFromFile(MapFilePath);
+        FillMapsFromFile(MapFilePath);
     }
 
-    public void Render()
-    {
-        for (int x = 0; x < _map.GetLength(0); x++)
-        {
-            for (int y = 0; y < _map.GetLength(1); y++)
-            {
-                Console.Write(_map[x, y]);            
-            }
-            Console.WriteLine();            
-        }
-    }
-
-    private void ReadMapFromFile(string filePath)
+    private void FillMapsFromFile(string filePath)
     {
         string[] lines = File.ReadAllLines(filePath);
     
@@ -32,13 +24,59 @@ internal class Map
         {
             for (int x = 0; x < Columns; x++)
             {
-                _map[y, x] = lines[y][x];
+                char pixel = lines[y][x];
+                _map[y, x] = pixel;
+                _mapInit[y, x] = pixel;
             }
         }
     }
 
-    public void SetPixel()
+    public void SetPixel(int x, int y, char pixel)
     {
-        _map[5, 5] = 'd';
+        _map[x, y] = pixel;
+    }
+
+    public char GetPixel(int x, int y)
+    {
+         return _map[x, y];
+    }
+
+    public void AddMovable(Movable movable)
+    {
+        if (_map[movable.Y, movable.X] != ' ')
+        {
+            throw new Exception($"Cant add movable to X: {movable.X} Y: {movable.Y} !");
+        }
+        SetPixel(movable.Y, movable.X, movable.Pixel);
+        _movables.Add(movable);
+    }
+
+    public void MoveMovables()
+    {
+        foreach (Movable movable in _movables)
+        {
+            if (movable.NeedAndCanMove(this))
+            {
+                SetPixel(movable.Y, movable.X, _mapInit[movable.Y, movable.X]);
+                movable.Move();
+                SetPixel(movable.Y, movable.X, movable.Pixel);
+            }
+        }
+    }
+
+    public bool GameOver()
+    {
+        if (!_gameOver)
+        {
+            return false;
+        }
+        Console.SetCursorPosition(0, Console.WindowHeight - 1);
+        Console.WriteLine("Game Over! You die & lost!");
+        return true;
+    }
+
+    public void SetGameOver()
+    {
+        _gameOver = true;
     }
 }
